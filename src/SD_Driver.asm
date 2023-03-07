@@ -40,6 +40,7 @@
        STA sectorcount%
 
 .SectorLoop
+       JSR SetLEDS
        PLP              ;; Unstack the carry flag: C=0 for read, C=1 for write
        PHP
        BCC SectorRead
@@ -57,6 +58,8 @@
 
 .SectorNext             ;; Update command block to point to next sector
        JSR incCommandAddress
+
+       JSR ResetLEDS
 
        INC &B3          ;; Increment the MSB of the dataptr
 
@@ -84,5 +87,18 @@
        LDY &B1
        AND #&7F
        RTS
+	
+  \ Illuminate Caps Lock & Shift Lock
+.SetLEDS
+	LDX #&6
+	STX &FE40
+	INX
+	STX &FE40
+	RTS
 
+	\ Reset LEDs
+.ResetLEDS
+	LDA #&76
+	JSR &FFF4
+  RTS
 

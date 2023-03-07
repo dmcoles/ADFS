@@ -11,6 +11,7 @@ INCLUDE_FLOPPY=FALSE
 _VIA_BASE=&FE60                 ; Base Address of 6522 VIA
 _TUBE_BASE=&FEE0                ; Base Address of Tube
 _TURBOMMC=0                     ; 1 = build for TurboMMC, and enable PB2-4 as outputs
+_MASTERSD=0
 
 TUBE_R3_DATA        = _TUBE_BASE + &05
 

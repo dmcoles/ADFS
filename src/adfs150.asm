@@ -2024,6 +2024,7 @@ ENDIF
        PLX              ;; Get byte count back
 IF PATCH_SD
 .L8B9B PHX
+       JSR SetLEDS
        JSR MMC_StartRead
        PLX
        PHX
@@ -2032,9 +2033,12 @@ IF PATCH_SD
 	   EOR #&FF         ;; Calculate 256 - bytecount
 	   TAY
 	   INY
+	   PHY
        JSR MMC_Clocks	;; ignore rest of sector
+	   PLY
        JSR MMC_Clocks	;; twice, as sectors are stretched to 512 bytes
        JSR MMC_16Clocks	;; ignore CRC
+       JSR ResetLEDS
        ;; TODO Add error handling
 ELSE
 .L8B9B LDY #&00         ;; Fetch 256 bytes
@@ -6696,9 +6700,11 @@ IF PATCH_SD
        STA &B2
        LDA &BF
        STA &B3
+       JSR SetLEDS
        JSR MMC_StartRead
        JSR MMC_Read256
-       JSR MMC_16Clocks	;; ignore CRC
+       JSR MMC_16Clocks	;; ignore CRC      
+       JSR ResetLEDS
        PLA
        STA &B3
        PLA
@@ -9092,7 +9098,11 @@ ENDIF
 
 IF PATCH_SD
 include "MMC.asm"
+IF _MASTERSD
+include "MMC_MasterSD.asm"
+ELSE
 include "MMC_UserPort.asm"
+ENDIF
 ENDIF
 
 PRINT "    code ends at",~P%," (",(&C000 - P%), "bytes free )"
