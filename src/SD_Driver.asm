@@ -32,34 +32,24 @@
        JSR MMC_BEGIN    ;; Initialize the card, if not already initialized
        PLP
        PHP              ;; Stack the carry flag: C=0 for read, C=1 for write
+       BCC SectorRead
        JSR MMC_SetupRW
        JSR setCommandAddress
         
        LDY #9
        LDA (&B0), Y     ;; Read the number of sectors to be transferred
-       STA sectorcount%
+       STA sectorcount%      
 
 .SectorLoop
-       JSR SetLEDS
-       PLP              ;; Unstack the carry flag: C=0 for read, C=1 for write
-       PHP
-       BCC SectorRead
+       JSR DoLEDS
 
 .SectorWrite
        JSR MMC_StartWrite
        JSR MMC_Write256
        JSR MMC_EndWrite
-       BRA SectorNext
 
-.SectorRead
-       JSR MMC_StartRead
-       JSR MMC_Read256
-       JSR MMC_16Clocks	;; ignore CRC
-
-.SectorNext             ;; Update command block to point to next sector
        JSR incCommandAddress
 
-       JSR ResetLEDS
 
        INC &B3          ;; Increment the MSB of the dataptr
 
@@ -76,6 +66,8 @@
 
 .CommandDone
 
+       JSR ResetLEDS
+
        ;; TODO add error handling
        LDA #0
 
@@ -87,10 +79,59 @@
        LDY &B1
        AND #&7F
        RTS
+
+
+.SectorRead
+       LDY #9
+       LDA (&B0), Y     ;; Read the number of sectors to be transferred
+       STA sectorcount%      
+
+       LDA #read_multiple_block
+       JSR MMC_SetCommand
+     
+       JSR setCommandAddress      
+       JSR MMC_DoCommand
+
+.SectorLoop2
+
+       JSR DoLEDS
+
+       JSR MMC_WaitForData
+
+       JSR MMC_Read256
+       JSR MMC_16Clocks	;; ignore CRC
+       
+.notlast
+       JSR incCommandAddress
+
+       INC &B3          ;; Increment the MSB of the dataptr
+
+       INC &C228        ;; Increment Tube address
+       BNE TubeAddr2
+       INC &C229
+       BNE TubeAddr2
+       INC &C22A
+.TubeAddr2
+
+       DEC sectorcount%
+       BNE SectorLoop2   ;; Loop for all sectors
+    
+       LDA #end_read
+       JSR MMC_SetCommand
+       JSR MMC_DoCommand
+
+       PLP
+       BRA CommandDone
 	
-  \ Illuminate Caps Lock & Shift Lock
+  ; Flash Caps Lock & Shift Lock
+.DoLEDS
+  LDX #14
+  LDA sectorcount%
+  AND #1
+  BEQ off
 .SetLEDS
-	LDX #&6
+  LDX #6
+.off
 	STX &FE40
 	INX
 	STX &FE40

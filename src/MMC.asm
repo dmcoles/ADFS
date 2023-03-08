@@ -9,6 +9,8 @@ send_op_cond     =&41
 send_cid         =&4A
 set_blklen       =&50
 read_single_block=&51
+read_multiple_block=&52
+end_read=&4c
 write_block      =&58
 
 ;; **** Begin Read Transaction ****
